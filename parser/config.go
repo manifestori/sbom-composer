@@ -21,7 +21,7 @@ type PackageChecksum struct {
 }
 
 var NOASSERTION string = "NOASSERTION"
-var SPDXConfigReference *builder.Config2_2 = &builder.Config2_2{
+var SPDXConfigReference *builder.Config = &builder.Config{
 	NamespacePrefix: "https://spdx.org/spdxdocs/", // TODO: move this to config
 	CreatorType:     "Tool",
 	Creator:         "sbom-composer-1.0", // TODO: automate taking the version
@@ -30,7 +30,7 @@ var SPDXConfigReference *builder.Config2_2 = &builder.Config2_2{
 // Config is a collection of configuration settings for builder
 // to create a composed document with.
 type Config struct {
-	SPDXConfigRef *builder.Config2_2
+	SPDXConfigRef *builder.Config
 
 	// DocumentName is an SBOM-Composer report
 	// for <top level product name>

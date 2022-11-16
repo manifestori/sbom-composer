@@ -3,9 +3,9 @@
 
 package parser
 
-import "github.com/spdx/tools-golang/spdx/v2_2"
+import spdx "github.com/spdx/tools-golang/spdx/v2_2"
 
 type Document struct {
-	SPDXDocRef    *spdx.Document2_2
+	SPDXDocRef    *spdx.Document
 	ConfigDataRef *Config
 }

@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/spdx/tools-golang/spdx/v2_2"
+	spdx "github.com/spdx/tools-golang/spdx/v2_2"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -29,7 +29,7 @@ packageSupplier: "somesupplier"
 packageComment: "<text>somecomment</text>"`)
 
 		want := Document{
-			SPDXDocRef: &spdx.Document2_2{
+			SPDXDocRef: &spdx.Document{
 				SPDXVersion:       "SPDX-2.2",
 				DataLicense:       "CC0-1.0",
 				SPDXIdentifier:    "DOCUMENT",

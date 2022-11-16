@@ -9,7 +9,9 @@ import (
 	"os"
 
 	spdx_json "github.com/spdx/tools-golang/json"
-	"github.com/spdx/tools-golang/spdx/v2_2"
+	spdx_common "github.com/spdx/tools-golang/spdx/common"
+	spdx "github.com/spdx/tools-golang/spdx/v2_2"
+
 	"github.com/spdx/tools-golang/tvsaver"
 )
 
@@ -38,12 +40,12 @@ func Save(doc *Document, composableDocs []*Document, output string, outFormat st
 
 	switch outFormat {
 	case "tv":
-		err = tvsaver.Save2_2(doc.SPDXDocRef, w)
+		err = tvsaver.Save(doc.SPDXDocRef, w)
 	case "json":
-		err = spdx_json.Save2_2(doc.SPDXDocRef, w)
+		err = spdx_json.Save(doc.SPDXDocRef, w)
 	default:
 		fmt.Printf("warn: %s is not proper output format; saving to default\n", outFormat)
-		err = tvsaver.Save2_2(doc.SPDXDocRef, w)
+		err = tvsaver.Save(doc.SPDXDocRef, w)
 	}
 	if err != nil {
 		fmt.Printf("error while saving %v: %v\n", output, err)
@@ -67,10 +69,10 @@ func AppendComposableDocument(res *Document, cdoc *Document, w io.Writer, outFor
 }
 
 func cleanDocumentFileData(doc *Document) *Document {
-	doc.SPDXDocRef.Files = []*spdx.File2_2{}
+	doc.SPDXDocRef.Files = []*spdx.File{}
 
 	for i := range doc.SPDXDocRef.Packages {
-		doc.SPDXDocRef.Packages[i].Files = []*spdx.File2_2{}
+		doc.SPDXDocRef.Packages[i].Files = []*spdx.File{}
 	}
 
 	return doc
@@ -78,19 +80,19 @@ func cleanDocumentFileData(doc *Document) *Document {
 
 func updateRelationships(doc *Document, composableDocs []*Document) (*Document, []*Document) {
 
-	rootDocElID := spdx.DocElementID{}
+	rootDocElID := spdx_common.DocElementID{}
 	if len(doc.SPDXDocRef.Packages) > 0 {
-		rootDocElID = spdx.MakeDocElementID("",
+		rootDocElID = spdx_common.MakeDocElementID("",
 			fmt.Sprintf("%s-%s", doc.SPDXDocRef.Packages[0].PackageName, doc.SPDXDocRef.Packages[0].PackageVersion))
 	} else {
-		rootDocElID = spdx.MakeDocElementID("",
+		rootDocElID = spdx_common.MakeDocElementID("",
 			fmt.Sprintf("%s-%s", doc.ConfigDataRef.PackageName, doc.ConfigDataRef.PackageVersion))
 	}
 	for _, cdoc := range composableDocs {
 		if cdoc != nil && len(cdoc.SPDXDocRef.Packages) > 0 {
-			elId := spdx.MakeDocElementID("",
+			elId := spdx_common.MakeDocElementID("",
 				fmt.Sprintf("%s-%s", cdoc.SPDXDocRef.Packages[0].PackageName, cdoc.SPDXDocRef.Packages[0].PackageVersion))
-			newRelationship := &spdx.Relationship2_2{
+			newRelationship := &spdx.Relationship{
 				RefA:         rootDocElID,
 				RefB:         elId,
 				Relationship: "DESCRIBES",
