@@ -40,12 +40,12 @@ func Save(doc *Document, composableDocs []*Document, output string, outFormat st
 
 	switch outFormat {
 	case "tv":
-		err = tvsaver.Save(doc.SPDXDocRef, w)
+		err = tvsaver.Save2_2(doc.SPDXDocRef, w)
 	case "json":
-		err = spdx_json.Save(doc.SPDXDocRef, w)
+		err = spdx_json.Save2_2(doc.SPDXDocRef, w)
 	default:
 		fmt.Printf("warn: %s is not proper output format; saving to default\n", outFormat)
-		err = tvsaver.Save(doc.SPDXDocRef, w)
+		err = tvsaver.Save2_2(doc.SPDXDocRef, w)
 	}
 	if err != nil {
 		fmt.Printf("error while saving %v: %v\n", output, err)
