@@ -6,7 +6,7 @@ package parser
 import (
 	"fmt"
 
-	builder_common "github.com/spdx/tools-golang/builder/build"
+	builder_common "github.com/spdx/tools-golang/builder"
 )
 
 func Build(dirRoot string, conf *Config) (*Document, error) {
