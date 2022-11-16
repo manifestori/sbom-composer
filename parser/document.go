@@ -3,7 +3,7 @@
 
 package parser
 
-import "github.com/spdx/tools-golang/spdx"
+import "github.com/spdx/tools-golang/spdx/v2_2"
 
 type Document struct {
 	SPDXDocRef    *spdx.Document2_2

@@ -9,7 +9,7 @@ import (
 	"os"
 
 	spdx_json "github.com/spdx/tools-golang/json"
-	"github.com/spdx/tools-golang/spdx"
+	"github.com/spdx/tools-golang/spdx/v2_2"
 	"github.com/spdx/tools-golang/tvsaver"
 )
 
