@@ -10,15 +10,13 @@ import (
 
 	spdx_json "github.com/spdx/tools-golang/json"
 	spdx_common "github.com/spdx/tools-golang/spdx/common"
-	"github.com/spdx/tools-golang/spdx/v2_2"
 	spdx "github.com/spdx/tools-golang/spdx/v2_2"
-	"golang.org/x/exp/slices"
 
 	"github.com/spdx/tools-golang/tvsaver"
 )
 
 func Save(doc *Document, composableDocs []*Document, output string, outFormat string) error {
-	fmt.Println("********")
+
 	output = updateFileExtension(output, outFormat)
 
 	w, err := os.Create(output)
@@ -80,34 +78,7 @@ func cleanDocumentFileData(doc *Document) *Document {
 	return doc
 }
 
-// Note: different generators mark the root package differently. for some, the document itself is the root package
-// for others, it is defined by a relationship of DESCRIBES, also there should be a match between the documentName/name to a package
-// This is also defined differently, some put the name only, others put name+version.
-func getRootPackage(doc *Document) *spdx.Package {
-	rls := doc.SPDXDocRef.Relationships
-	reID := spdx_common.ElementID("DOCUMENT") // by default, if no DESCRIBES relationship exist, the document is the root package
-	for _, r := range rls {
-		if r.Relationship == "DESCRIBES" && r.RefA.ElementRefID == "DOCUMENT" {
-			reID = r.RefB.ElementRefID
-		}
-	}
-	var res *spdx.Package
-	if reID == "DOCUMENT" {
-		// root document
-		name := doc.SPDXDocRef.DocumentName
-		i := slices.IndexFunc(doc.SPDXDocRef.Packages, func(p *v2_2.Package) bool {
-			fmt.Println(name, p.PackageName)
-			return false
-		})
-		if i < 0 {
-			panic("meh")
-		}
-		res = doc.SPDXDocRef.Packages[i]
-	}
-	return res
-}
 func updateRelationships(doc *Document, composableDocs []*Document) (*Document, []*Document) {
-	getRootPackage(doc)
 	rootDocElID := spdx_common.DocElementID{}
 	if len(doc.SPDXDocRef.Packages) > 0 {
 		rootDocElID = spdx_common.MakeDocElementID("",
