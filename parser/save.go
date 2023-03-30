@@ -10,13 +10,14 @@ import (
 
 	spdx_json "github.com/spdx/tools-golang/json"
 	spdx_common "github.com/spdx/tools-golang/spdx/common"
+	"github.com/spdx/tools-golang/spdx/v2_2"
 	spdx "github.com/spdx/tools-golang/spdx/v2_2"
+	"golang.org/x/exp/slices"
 
 	"github.com/spdx/tools-golang/tvsaver"
 )
 
 func Save(doc *Document, composableDocs []*Document, output string, outFormat string) error {
-
 	output = updateFileExtension(output, outFormat)
 
 	w, err := os.Create(output)
@@ -78,28 +79,87 @@ func cleanDocumentFileData(doc *Document) *Document {
 	return doc
 }
 
-func updateRelationships(doc *Document, composableDocs []*Document) (*Document, []*Document) {
-	rootDocElID := spdx_common.DocElementID{}
-	if len(doc.SPDXDocRef.Packages) > 0 {
-		rootDocElID = spdx_common.MakeDocElementID("",
-			fmt.Sprintf("%s-%s", doc.SPDXDocRef.Packages[0].PackageName, doc.SPDXDocRef.Packages[0].PackageVersion))
-	} else {
-		rootDocElID = spdx_common.MakeDocElementID("",
-			fmt.Sprintf("%s-%s", doc.ConfigDataRef.PackageName, doc.ConfigDataRef.PackageVersion))
+// Note: different generators mark the root package differently. for some, the document itself is the root package
+// for others, it is defined by a relationship of DESCRIBES, also there should be a match between the documentName/name to a package
+// This is also defined differently, some put the name only, others put name+version.
+func getRootPackageIndex(doc *Document) (int, int) {
+	j := -1
+
+	// TODO: add documentDescribes on root
+	// Note: only available on 0.5.0-rc spdx/tools-golang
+	rls := doc.SPDXDocRef.Relationships
+	reID := spdx_common.ElementID("DOCUMENT") // by default, if no DESCRIBES relationship exist, the document is the root package
+	for i, r := range rls {
+		if r.Relationship == "DESCRIBES" && r.RefA.ElementRefID == "DOCUMENT" {
+			reID = r.RefB.ElementRefID
+			j = i
+		}
 	}
+
+	var i int
+	if reID == "DOCUMENT" {
+		name := doc.SPDXDocRef.DocumentName
+		i = slices.IndexFunc(doc.SPDXDocRef.Packages, func(p *v2_2.Package) bool {
+			// exact match
+			if p.PackageName == name {
+				return true
+			}
+			// filesystem added /
+			if p.PackageName == fmt.Sprintf("%s/", name) {
+				return true
+			}
+			// name-version
+			if fmt.Sprintf("%s-%s", p.PackageName, p.PackageVersion) == name {
+				return true
+			}
+
+			return false
+		})
+
+	} else {
+		i = slices.IndexFunc(doc.SPDXDocRef.Packages, func(p *v2_2.Package) bool {
+			return p.PackageSPDXIdentifier == reID
+		})
+	}
+
+	return i, j
+}
+
+func updateRelationships(doc *Document, composableDocs []*Document) (*Document, []*Document) {
 	for _, cdoc := range composableDocs {
+		i, j := getRootPackageIndex(cdoc)
+		var rootPkg *spdx.Package
+		if i >= 0 {
+			rootPkg = cdoc.SPDXDocRef.Packages[i]
+		}
+		if rootPkg == nil {
+			rootPkg = &spdx.Package{
+				PackageName:           cdoc.SPDXDocRef.DocumentName,
+				PackageSPDXIdentifier: spdx_common.MakeDocElementID("", cdoc.SPDXDocRef.DocumentName).ElementRefID,
+			}
+			cdoc.SPDXDocRef.Packages = append([]*spdx.Package{rootPkg}, cdoc.SPDXDocRef.Packages...)
+
+			for _, p := range cdoc.SPDXDocRef.Packages {
+				newRelationship := &spdx.Relationship{
+					RefA:         spdx_common.MakeDocElementID("", string(rootPkg.PackageSPDXIdentifier)),
+					RefB:         spdx_common.MakeDocElementID("", string(p.PackageSPDXIdentifier)),
+					Relationship: "DEPENDS_ON",
+				}
+				doc.SPDXDocRef.Relationships = append(doc.SPDXDocRef.Relationships, newRelationship)
+			}
+		}
+
 		if cdoc != nil && len(cdoc.SPDXDocRef.Packages) > 0 {
-			elId := spdx_common.MakeDocElementID("",
-				fmt.Sprintf("%s-%s", cdoc.SPDXDocRef.Packages[0].PackageName, cdoc.SPDXDocRef.Packages[0].PackageVersion))
+			elId := spdx_common.MakeDocElementID("", string(rootPkg.PackageSPDXIdentifier))
 			newRelationship := &spdx.Relationship{
-				RefA:         rootDocElID,
+				RefA:         spdx_common.MakeDocElementID("", fmt.Sprintf("Package-%s", doc.SPDXDocRef.Packages[0].PackageName)),
 				RefB:         elId,
-				Relationship: "DESCRIBES",
+				Relationship: "DEPENDS_ON",
 			}
 			doc.SPDXDocRef.Relationships = append(doc.SPDXDocRef.Relationships, newRelationship)
 		}
-		if cdoc != nil && len(cdoc.SPDXDocRef.Relationships) > 0 {
-			cdoc.SPDXDocRef.Relationships = cdoc.SPDXDocRef.Relationships[1:]
+		if cdoc != nil && len(cdoc.SPDXDocRef.Relationships) > 0 && j >= 0 {
+			cdoc.SPDXDocRef.Relationships = slices.Delete(cdoc.SPDXDocRef.Relationships, j, j+1)
 		}
 	}
 
