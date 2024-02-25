@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"testing"
 
-	spdx "github.com/spdx/tools-golang/spdx/v2_2"
+	spdx "github.com/spdx/tools-golang/spdx"
 	"github.com/stretchr/testify/assert"
 )
 

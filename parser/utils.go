@@ -4,14 +4,14 @@
 package parser
 
 import (
-	"io/ioutil"
 	"log"
+	"os"
 	"strings"
 )
 
 func readDir(dir string) []string {
 	res := []string{}
-	files, err := ioutil.ReadDir(dir)
+	files, err := os.ReadDir(dir)
 	if err != nil {
 		log.Fatal(err)
 	}

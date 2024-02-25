@@ -6,11 +6,11 @@ package parser
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"strings"
 
 	builder_common "github.com/spdx/tools-golang/builder"
-	"gopkg.in/yaml.v3"
+	yaml "gopkg.in/yaml.v3"
 )
 
 // PackageChecksum is a unique identifier used to verify if all files
@@ -21,7 +21,7 @@ type PackageChecksum struct {
 }
 
 var NOASSERTION string = "NOASSERTION"
-var SPDXConfigReference *builder_common.Config2_2 = &builder_common.Config2_2{
+var SPDXConfigReference *builder_common.Config = &builder_common.Config{
 	NamespacePrefix: "https://spdx.org/spdxdocs/", // TODO: move this to config
 	CreatorType:     "Tool",
 	Creator:         "sbom-composer-1.0", // TODO: automate taking the version
@@ -30,7 +30,7 @@ var SPDXConfigReference *builder_common.Config2_2 = &builder_common.Config2_2{
 // Config is a collection of configuration settings for builder
 // to create a composed document with.
 type Config struct {
-	SPDXConfigRef *builder_common.Config2_2
+	SPDXConfigRef *builder_common.Config
 
 	// DocumentName is an SBOM-Composer report
 	// for <top level product name>
@@ -100,7 +100,7 @@ func LoadConfig(file string) *Config {
 
 func readConfFile(file string) []byte {
 
-	conf, err := ioutil.ReadFile(file)
+	conf, err := os.ReadFile(file)
 
 	if err != nil {
 		fmt.Println("failed reading yaml file\n", err)

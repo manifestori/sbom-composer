@@ -10,7 +10,7 @@ import (
 )
 
 func Build(dirRoot string, conf *Config) (*Document, error) {
-	spdxDocRef, err := builder_common.Build2_2(conf.PackageName, dirRoot, conf.SPDXConfigRef)
+	spdxDocRef, err := builder_common.Build(conf.PackageName, dirRoot, conf.SPDXConfigRef)
 	if err != nil {
 		fmt.Printf("error while building spdx document reference for path %v with config %v, %v: %v\n", dirRoot, conf.PackageName, conf.SPDXConfigRef, err)
 	}

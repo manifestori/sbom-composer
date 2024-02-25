@@ -7,14 +7,13 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"slices"
 
 	spdx_json "github.com/spdx/tools-golang/json"
-	spdx_common "github.com/spdx/tools-golang/spdx/common"
-	"github.com/spdx/tools-golang/spdx/v2_2"
-	spdx "github.com/spdx/tools-golang/spdx/v2_2"
-	"golang.org/x/exp/slices"
+	"github.com/spdx/tools-golang/spdx"
+	spdx_common "github.com/spdx/tools-golang/spdx/v2/common"
 
-	"github.com/spdx/tools-golang/tvsaver"
+	spdx_tagvalue "github.com/spdx/tools-golang/tagvalue"
 )
 
 func Save(doc *Document, composableDocs []*Document, output string, outFormat string) error {
@@ -41,12 +40,12 @@ func Save(doc *Document, composableDocs []*Document, output string, outFormat st
 
 	switch outFormat {
 	case "tv":
-		err = tvsaver.Save2_2(doc.SPDXDocRef, w)
+		err = spdx_tagvalue.Write(doc.SPDXDocRef, w)
 	case "json":
-		err = spdx_json.Save2_2(doc.SPDXDocRef, w)
+		err = spdx_json.Write(doc.SPDXDocRef, w)
 	default:
 		fmt.Printf("warn: %s is not proper output format; saving to default\n", outFormat)
-		err = tvsaver.Save2_2(doc.SPDXDocRef, w)
+		err = spdx_tagvalue.Write(doc.SPDXDocRef, w)
 	}
 	if err != nil {
 		fmt.Printf("error while saving %v: %v\n", output, err)
@@ -88,7 +87,7 @@ func getRootPackageIndex(doc *Document) (int, int) {
 	// TODO: add documentDescribes on root
 	// Note: only available on 0.5.0-rc spdx/tools-golang
 	rls := doc.SPDXDocRef.Relationships
-	reID := spdx_common.ElementID("DOCUMENT") // by default, if no DESCRIBES relationship exist, the document is the root package
+	reID := spdx.ElementID("DOCUMENT") // by default, if no DESCRIBES relationship exist, the document is the root package
 	for i, r := range rls {
 		if r.Relationship == "DESCRIBES" && r.RefA.ElementRefID == "DOCUMENT" {
 			reID = r.RefB.ElementRefID
@@ -99,7 +98,7 @@ func getRootPackageIndex(doc *Document) (int, int) {
 	var i int
 	if reID == "DOCUMENT" {
 		name := doc.SPDXDocRef.DocumentName
-		i = slices.IndexFunc(doc.SPDXDocRef.Packages, func(p *v2_2.Package) bool {
+		i = slices.IndexFunc(doc.SPDXDocRef.Packages, func(p *spdx.Package) bool {
 			// exact match
 			if p.PackageName == name {
 				return true
@@ -117,7 +116,7 @@ func getRootPackageIndex(doc *Document) (int, int) {
 		})
 
 	} else {
-		i = slices.IndexFunc(doc.SPDXDocRef.Packages, func(p *v2_2.Package) bool {
+		i = slices.IndexFunc(doc.SPDXDocRef.Packages, func(p *spdx.Package) bool {
 			return p.PackageSPDXIdentifier == reID
 		})
 	}
