@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"slices"
+	"strings"
 
 	spdx_json "github.com/spdx/tools-golang/json"
 	"github.com/spdx/tools-golang/spdx"
@@ -124,6 +125,15 @@ func getRootPackageIndex(doc *Document) (int, int) {
 	return i, j
 }
 
+func sanitizeDocumentName(name string) string {
+	var str = strings.ToLower(name)
+	str = strings.ReplaceAll(str, " ", "-")
+	str = strings.ReplaceAll(str, "/", "-")
+	str = strings.ReplaceAll(str, "\\", "-")
+	str = strings.ReplaceAll(str, "_", "-")
+	return str
+}
+
 func updateRelationships(doc *Document, composableDocs []*Document) (*Document, []*Document) {
 	for _, cdoc := range composableDocs {
 		i, j := getRootPackageIndex(cdoc)
@@ -134,7 +144,7 @@ func updateRelationships(doc *Document, composableDocs []*Document) (*Document, 
 		if rootPkg == nil {
 			rootPkg = &spdx.Package{
 				PackageName:           cdoc.SPDXDocRef.DocumentName,
-				PackageSPDXIdentifier: spdx_common.MakeDocElementID("", cdoc.SPDXDocRef.DocumentName).ElementRefID,
+				PackageSPDXIdentifier: spdx_common.MakeDocElementID("", sanitizeDocumentName(cdoc.SPDXDocRef.DocumentName)).ElementRefID,
 			}
 			cdoc.SPDXDocRef.Packages = append([]*spdx.Package{rootPkg}, cdoc.SPDXDocRef.Packages...)
 
