@@ -58,7 +58,6 @@ func Save(doc *Document, composableDocs []*Document, output string, outFormat st
 // RenderComposableDocument processes a composable document
 // and renders it to the composed document
 func AppendComposableDocument(res *Document, cdoc *Document, w io.Writer, outFormat string) {
-
 	res.SPDXDocRef.Annotations = append(res.SPDXDocRef.Annotations, cdoc.SPDXDocRef.Annotations...)
 	res.SPDXDocRef.ExternalDocumentReferences = append(res.SPDXDocRef.ExternalDocumentReferences, cdoc.SPDXDocRef.ExternalDocumentReferences...)
 	res.SPDXDocRef.Files = append(res.SPDXDocRef.Files, cdoc.SPDXDocRef.Files...)
@@ -85,10 +84,9 @@ func cleanDocumentFileData(doc *Document) *Document {
 func getRootPackageIndex(doc *Document) (int, int) {
 	j := -1
 
-	// TODO: add documentDescribes on root
-	// Note: only available on 0.5.0-rc spdx/tools-golang
+	// Determine the root element’s SPDX identifier using a DESCRIBES relationship.
 	rls := doc.SPDXDocRef.Relationships
-	reID := spdx.ElementID("DOCUMENT") // by default, if no DESCRIBES relationship exist, the document is the root package
+	reID := spdx.ElementID("DOCUMENT")// by default, if no DESCRIBES relationship exist, the document is the root package
 	for i, r := range rls {
 		if r.Relationship == "DESCRIBES" && r.RefA.ElementRefID == "DOCUMENT" {
 			reID = r.RefB.ElementRefID
@@ -97,6 +95,7 @@ func getRootPackageIndex(doc *Document) (int, int) {
 	}
 
 	var i int
+	// First, try to find a matching package.
 	if reID == "DOCUMENT" {
 		name := doc.SPDXDocRef.DocumentName
 		i = slices.IndexFunc(doc.SPDXDocRef.Packages, func(p *spdx.Package) bool {
@@ -104,29 +103,39 @@ func getRootPackageIndex(doc *Document) (int, int) {
 			if p.PackageName == name {
 				return true
 			}
-			// filesystem added /
 			if p.PackageName == fmt.Sprintf("%s/", name) {
 				return true
 			}
-			// name-version
 			if fmt.Sprintf("%s-%s", p.PackageName, p.PackageVersion) == name {
 				return true
 			}
-
 			return false
 		})
-
 	} else {
 		i = slices.IndexFunc(doc.SPDXDocRef.Packages, func(p *spdx.Package) bool {
 			return p.PackageSPDXIdentifier == reID
 		})
 	}
 
+	// If no matching package was found, try to locate a matching file.
+	if i == -1 {
+		if reID == "DOCUMENT" {
+			name := doc.SPDXDocRef.DocumentName
+			i = slices.IndexFunc(doc.SPDXDocRef.Files, func(f *spdx.File) bool {
+				return f.FileName == name
+			})
+		} else {
+			i = slices.IndexFunc(doc.SPDXDocRef.Files, func(f *spdx.File) bool {
+				return f.FileSPDXIdentifier == reID
+			})
+		}
+	}
+
 	return i, j
 }
 
 func sanitizeDocumentName(name string) string {
-	var str = strings.ToLower(name)
+	str := strings.ToLower(name)
 	str = strings.ReplaceAll(str, " ", "-")
 	str = strings.ReplaceAll(str, "/", "-")
 	str = strings.ReplaceAll(str, "\\", "-")
